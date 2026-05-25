@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>FEB Corner — Absensi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<style>
+:root {
+  --navy:       #1a2b5e;
+  --navy-dark:  #111d42;
+  --navy-mid:   #1e3368;
+  --gold:       #c9a84c;
+  --gold-light: #e2c576;
+  --gold-dim:   #8a6e2a;
+  --cream:      #f7f4ef;
+  --white:      #ffffff;
+  --grey:       #9aa0b4;
+  --grey-light: #e8eaf0;
+  --green:      #1a7a4a;
+  --orange:     #c0671a;
+  --red:        #c0392b;
+  --shadow:     0 8px 32px rgba(26,43,94,0.15);
+  --shadow-sm:  0 2px 12px rgba(26,43,94,0.10);
+  --r:          16px;
+  --rs:         10px;
+  --t:          0.22s cubic-bezier(0.4,0,0.2,1);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--navy);overflow-x:hidden}
+#app{min-height:100vh;display:flex;flex-direction:column}
+
+/* ── PAGES ── */
+.page{display:none;flex-direction:column;min-height:100vh}
+.page.active{display:flex;animation:fadeUp .35s ease}
+
+/* ── TOPBAR ── */
+.topbar{
+  background:var(--navy);padding:14px 20px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:100;
+  box-shadow:0 2px 12px rgba(26,43,94,0.3)
+}
+.tb-brand{display:flex;align-items:center;gap:10px}
+.tb-icon{
+  width:36px;height:36px;border-radius:10px;
+  background:linear-gradient(135deg,var(--gold),var(--gold-dim));
+  display:flex;align-items:center;justify-content:center
+}
+.tb-icon svg{width:18px;height:18px;fill:var(--navy-dark)}
+.tb-title{font-family:'Playfair Display',serif;font-size:17px;font-weight:700;color:var(--white)}
+.tb-sub{font-size:11px;color:var(--gold-light);display:block;letter-spacing:.06em}
+.btn-icon{
+  width:34px;height:34px;border:1px solid rgba(201,168,76,.25);border-radius:9px;
+  background:rgba(255,255,255,.05);color:var(--gold-light);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;transition:var(--t)
+}
+.btn-icon:hover{background:rgba(201,168,76,.15);border-color:var(--gold)}
+.btn-icon svg{width:16px;height:16px;fill:currentColor}
+
+/* ── SERVER STATUS BAR ── */
+.server-bar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 20px;
+  font-size:12px;font-weight:500;
+  background:rgba(26,43,94,.04);
+  border-bottom:1px solid var(--grey-light);
+  gap:10px;flex-wrap:wrap
+}
+.server-indicator{display:flex;align-items:center;gap:6px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--grey);flex-shrink:0;transition:var(--t)}
+.dot.ok{background:var(--green);box-shadow:0 0 6px rgba(26,122,74,.5)}
+.dot.err{background:var(--red);box-shadow:0 0 6px rgba(192,57,43,.4)}
+.dot.checking{background:var(--gold);animation:pulse 1s infinite}
+.server-text{color:var(--grey)}
+.server-text.ok{color:var(--green)}
+.server-text.err{color:var(--red)}
+.btn-test{
+  padding:5px 14px;border:1px solid var(--grey-light);border-radius:20px;
+  background:var(--white);font-family:'DM Sans',sans-serif;font-size:12px;
+  color:var(--navy);cursor:pointer;transition:var(--t);font-weight:500
+}
+.btn-test:hover{border-color:var(--navy);background:var(--navy);color:var(--white)}
+.btn-test:disabled{opacity:.5;cursor:not-allowed}
+
+/* ── STAFF HOME ── */
+#page-staff{background:var(--cream)}
+.staff-body{flex:1;padding:16px 20px;display:flex;flex-direction:column;gap:14px;max-width:480px;margin:0 auto;width:100%}
+
+/* Greeting card */
+.card-greeting{
+  background:var(--navy);border-radius:20px;padding:22px;
+  position:relative;overflow:hidden
+}
+.card-greeting::before{
+  content:'';position:absolute;inset:-50%;
+  background:radial-gradient(ellipse at 80% 10%,rgba(201,168,76,.16) 0%,transparent 55%);
+  pointer-events:none
+}
+.greet-row{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px}
+.greet-text h2{font-family:'Playfair Display',serif;font-size:20px;color:var(--white);font-weight:700}
+.greet-text p{font-size:12px;color:var(--gold-light);margin-top:2px}
+.clock{font-family:'Playfair Display',serif;font-size:38px;font-weight:700;color:var(--white);letter-spacing:-.02em;line-height:1}
+.date-str{font-size:12px;color:rgba(255,255,255,.55);margin-top:5px}
+
+/* Staff picker */
+.section-lbl{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--navy-mid);margin-bottom:8px}
+.staff-picker{
+  display:grid;grid-template-columns:repeat(2,1fr);gap:9px
+}
+.staff-chip{
+  display:flex;align-items:center;gap:10px;
+  padding:13px 14px;border:2px solid var(--grey-light);border-radius:var(--r);
+  background:var(--white);cursor:pointer;transition:var(--t)
+}
+.staff-chip:hover{border-color:var(--navy-mid);transform:translateY(-1px)}
+.staff-chip.selected{
+  border-color:var(--gold);
+  background:linear-gradient(135deg,rgba(201,168,76,.09),rgba(201,168,76,.03));
+  box-shadow:0 0 0 1px var(--gold),var(--shadow-sm)
+}
+.chip-avatar{
+  width:34px;height:34px;border-radius:10px;
+  background:var(--grey-light);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Playfair Display',serif;font-size:15px;font-weight:700;
+  color:var(--navy);flex-shrink:0;transition:var(--t)
+}
+.staff-chip.selected .chip-avatar{background:rgba(201,168,76,.2);color:var(--gold-dim)}
+.chip-name{font-size:14px;font-weight:600;color:var(--navy)}
+
+/* Select grid (unit / shift) */
+.sel-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.sel-card{
+  background:var(--white);border:2px solid var(--grey-light);border-radius:var(--r);
+  padding:14px;cursor:pointer;transition:var(--t);
+  display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center
+}
+.sel-card:hover{border-color:var(--navy-mid);transform:translateY(-1px)}
+.sel-card.selected{
+  border-color:var(--gold);
+  background:linear-gradient(135deg,rgba(201,168,76,.09),rgba(201,168,76,.03));
+  box-shadow:0 0 0 1px var(--gold),var(--shadow-sm)
+}
+.sel-icon{width:38px;height:38px;border-radius:11px;background:var(--cream);display:flex;align-items:center;justify-content:center;font-size:19px;transition:var(--t)}
+.sel-card.selected .sel-icon{background:rgba(201,168,76,.15)}
+.sel-label{font-size:14px;font-weight:600;color:var(--navy)}
+.sel-sub{font-size:11px;color:var(--grey)}
+
+/* Check-in button */
+.btn-checkin{
+  width:100%;padding:18px;border:none;border-radius:var(--r);
+  background:linear-gradient(135deg,var(--navy),var(--navy-dark));
+  color:var(--white);font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;
+  cursor:pointer;letter-spacing:.04em;transition:var(--t);
+  box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;gap:9px;
+  position:relative;overflow:hidden
+}
+.btn-checkin::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--gold);border-radius:4px 0 0 4px}
+.btn-checkin:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 12px 32px rgba(26,43,94,.3)}
+.btn-checkin:active:not(:disabled){transform:translateY(0)}
+.btn-checkin:disabled{opacity:.45;cursor:not-allowed;background:var(--grey-light);color:var(--grey);box-shadow:none}
+.btn-checkin:disabled::before{display:none}
+.btn-checkin svg{width:19px;height:19px;fill:currentColor}
+
+/* Status result card */
+.status-result{
+  background:var(--white);border-radius:var(--r);padding:18px;
+  display:none;border-left:4px solid var(--green);box-shadow:var(--shadow-sm)
+}
+.status-result.show{display:block;animation:fadeUp .4s ease}
+.status-result.late{border-left-color:var(--orange)}
+.sr-head{display:flex;align-items:center;gap:9px;margin-bottom:12px}
+.sr-emoji{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:17px}
+.sr-emoji.ok{background:rgba(26,122,74,.1)}
+.sr-emoji.late{background:rgba(192,103,26,.1)}
+.sr-head h3{font-family:'Playfair Display',serif;font-size:15px;font-weight:700;color:var(--navy)}
+.sr-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.sr-item span{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--grey);margin-bottom:2px}
+.sr-item strong{font-size:14px;color:var(--navy);font-weight:600}
+
+/* ── ADMIN PAGE ── */
+#page-admin{background:var(--cream)}
+.admin-body{flex:1;padding:16px 20px;display:flex;flex-direction:column;gap:14px;max-width:960px;margin:0 auto;width:100%}
+
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.stat-card{background:var(--white);border-radius:var(--r);padding:16px;text-align:center;box-shadow:var(--shadow-sm);border-top:3px solid var(--navy-mid)}
+.stat-card.g{border-top-color:var(--gold)}
+.stat-card.gr{border-top-color:var(--green)}
+.stat-val{font-family:'Playfair Display',serif;font-size:28px;font-weight:700;color:var(--navy);line-height:1}
+.stat-lbl{font-size:11px;color:var(--grey);margin-top:3px;text-transform:uppercase;letter-spacing:.06em}
+
+.filter-bar{
+  background:var(--white);border-radius:var(--r);padding:14px;
+  box-shadow:var(--shadow-sm);display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end
+}
+.fg{flex:1;min-width:110px}
+.fg label{display:block;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--grey);margin-bottom:5px}
+.fg select,.fg input{
+  width:100%;padding:9px 11px;border:1px solid var(--grey-light);border-radius:var(--rs);
+  font-family:'DM Sans',sans-serif;font-size:13px;color:var(--navy);background:var(--cream);
+  outline:none;cursor:pointer;transition:var(--t);-webkit-appearance:none
+}
+.fg select:focus,.fg input:focus{border-color:var(--navy)}
+.btn-filter{
+  padding:9px 18px;border:none;border-radius:var(--rs);background:var(--navy);
+  color:var(--white);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;
+  cursor:pointer;transition:var(--t);white-space:nowrap;align-self:flex-end
+}
+.btn-filter:hover{background:var(--navy-mid)}
+.btn-sheet{
+  padding:9px 18px;border:1px solid var(--gold);border-radius:var(--rs);
+  background:rgba(201,168,76,.08);color:var(--gold-dim);
+  font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;
+  cursor:pointer;transition:var(--t);text-decoration:none;
+  display:inline-flex;align-items:center;gap:5px;white-space:nowrap;align-self:flex-end
+}
+.btn-sheet:hover{background:rgba(201,168,76,.18)}
+.btn-sheet svg{width:13px;height:13px;fill:currentColor}
+
+.table-card{background:var(--white);border-radius:var(--r);box-shadow:var(--shadow-sm);overflow:hidden}
+.table-head-row{padding:14px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--grey-light)}
+.table-head-row h3{font-family:'Playfair Display',serif;font-size:17px;color:var(--navy)}
+.tcount{font-size:12px;color:var(--grey);background:var(--cream);padding:3px 10px;border-radius:20px}
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{background:var(--navy);color:var(--white);padding:11px 14px;text-align:left;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+tbody tr:nth-child(even){background:var(--cream)}
+tbody tr:hover{background:rgba(201,168,76,.06)}
+tbody td{padding:11px 14px;color:var(--navy);border-bottom:1px solid var(--grey-light);white-space:nowrap}
+.badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;letter-spacing:.04em}
+.bh{background:rgba(26,122,74,.1);color:var(--green)}
+.bt{background:rgba(192,103,26,.1);color:var(--orange)}
+.empty-st{text-align:center;padding:44px 20px;color:var(--grey)}
+.empty-st p{font-size:13px}
+
+/* ── SERVER TEST PANEL ── */
+.test-panel{
+  background:var(--white);border-radius:var(--r);padding:18px;
+  box-shadow:var(--shadow-sm);border:1px solid var(--grey-light)
+}
+.test-panel h4{font-family:'Playfair Display',serif;font-size:15px;color:var(--navy);margin-bottom:12px}
+.test-url-row{display:flex;gap:8px;margin-bottom:10px}
+.test-url-row input{
+  flex:1;padding:10px 13px;border:1px solid var(--grey-light);border-radius:var(--rs);
+  font-family:'DM Sans',sans-serif;font-size:13px;color:var(--navy);background:var(--cream);outline:none
+}
+.test-url-row input:focus{border-color:var(--navy)}
+.btn-run-test{
+  padding:10px 16px;border:none;border-radius:var(--rs);background:var(--navy);
+  color:var(--white);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;
+  cursor:pointer;white-space:nowrap;transition:var(--t)
+}
+.btn-run-test:hover{background:var(--navy-mid)}
+.btn-run-test:disabled{opacity:.5;cursor:not-allowed}
+.btn-save-url{
+  padding:10px 16px;border:1px solid var(--gold);border-radius:var(--rs);
+  background:rgba(201,168,76,.08);color:var(--gold-dim);
+  font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;
+  cursor:pointer;white-space:nowrap;transition:var(--t)
+}
+.btn-save-url:hover{background:rgba(201,168,76,.18)}
+.test-log{
+  background:var(--cream);border-radius:var(--rs);padding:12px 14px;
+  font-family:monospace;font-size:12px;color:var(--navy);
+  min-height:52px;max-height:140px;overflow-y:auto;
+  border:1px solid var(--grey-light);white-space:pre-wrap;line-height:1.6
+}
+.log-ok{color:var(--green)}
+.log-err{color:var(--red)}
+.log-info{color:var(--grey)}
+
+/* ── SHARED ── */
+.loading-overlay{position:fixed;inset:0;background:rgba(26,43,94,.55);display:none;align-items:center;justify-content:center;z-index:999;backdrop-filter:blur(4px)}
+.loading-overlay.show{display:flex}
+.spinner{width:46px;height:46px;border:3px solid rgba(201,168,76,.2);border-top-color:var(--gold);border-radius:50%;animation:spin .7s linear infinite}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(100px);background:var(--navy-dark);color:var(--white);padding:12px 22px;border-radius:11px;font-size:13px;font-weight:500;box-shadow:0 8px 24px rgba(0,0,0,.28);z-index:1000;transition:transform .3s cubic-bezier(.4,0,.2,1);border-left:4px solid var(--gold);white-space:nowrap}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.toast.err{border-left-color:var(--red)}
+.toast.ok{border-left-color:var(--green)}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+@media(max-width:460px){
+  .staff-picker{grid-template-columns:1fr 1fr}
+  .stats-row{grid-template-columns:1fr 1fr}
+  .stats-row .stat-card:last-child{grid-column:span 2}
+  .clock{font-size:32px}
+  .filter-bar{flex-direction:column}
+  .fg{min-width:100%}
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+<div class="loading-overlay" id="loading"><div class="spinner"></div></div>
+<div class="toast" id="toast"></div>
+
+<!-- ══════════════════════════════════════════
+     PAGE: STAFF
+══════════════════════════════════════════ -->
+<div class="page active" id="page-staff">
+  <div class="topbar">
+    <div class="tb-brand">
+      <div class="tb-icon">
+        <svg viewBox="0 0 24 24"><path d="M2 19h18v2H2v-2zm2-3h14l1.5-9H2.5L4 16zm10-9V5a3 3 0 0 0-3-3H9a3 3 0 0 0-3 3v2H4V5a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v2h-2zm1 0h4a2 2 0 0 1 2 2v1a2 2 0 0 1-2 2h-4V7z"/></svg>
+      </div>
+      <div>
+        <span class="tb-title">FEB Corner</span>
+        <span class="tb-sub">Absensi Staff</span>
+      </div>
+    </div>
+    <button class="btn-icon" onclick="showPage('page-admin')" title="Admin Dashboard">
+      <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+    </button>
+  </div>
+
+  <!-- Server status bar -->
+  <div class="server-bar">
+    <div class="server-indicator">
+      <div class="dot checking" id="s-dot"></div>
+      <span class="server-text" id="s-text">Memeriksa koneksi server...</span>
+    </div>
+    <button class="btn-test" id="btn-ping" onclick="pingServer()">Test Koneksi</button>
+  </div>
+
+  <div class="staff-body">
+
+    <!-- Clock card -->
+    <div class="card-greeting">
+      <div class="greet-row">
+        <div class="greet-text">
+          <h2 id="greeting-txt">Selamat Pagi!</h2>
+          <p>Pilih nama dan lakukan check-in</p>
+        </div>
+      </div>
+      <div class="clock" id="clock">--:--:--</div>
+      <div class="date-str" id="date-str">—</div>
+    </div>
+
+    <!-- Staff picker -->
+    <div>
+      <div class="section-lbl">Pilih Nama Anda</div>
+      <div class="staff-picker" id="staff-picker">
+        <!-- Diisi dari JS / STAFF_LIST -->
+      </div>
+    </div>
+
+    <!-- Unit -->
+    <div>
+      <div class="section-lbl">Pilih Unit Kerja</div>
+      <div class="sel-grid">
+        <div class="sel-card" id="u-kopi" onclick="selectUnit('Pojok Kopi')">
+          <div class="sel-icon">☕</div>
+          <div class="sel-label">Pojok Kopi</div>
+        </div>
+        <div class="sel-card" id="u-umkm" onclick="selectUnit('Pojok UMKM')">
+          <div class="sel-icon">🏪</div>
+          <div class="sel-label">Pojok UMKM</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Shift -->
+    <div>
+      <div class="section-lbl">Pilih Shift</div>
+      <div class="sel-grid">
+        <div class="sel-card" id="sh-1" onclick="selectShift('Shift 1')">
+          <div class="sel-icon">🌅</div>
+          <div class="sel-label">Shift 1</div>
+          <div class="sel-sub">07:00 – 14:00</div>
+        </div>
+        <div class="sel-card" id="sh-2" onclick="selectShift('Shift 2')">
+          <div class="sel-icon">🌇</div>
+          <div class="sel-label">Shift 2</div>
+          <div class="sel-sub">14:00 – 21:00</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Status result -->
+    <div class="status-result" id="status-result">
+      <div class="sr-head">
+        <div class="sr-emoji ok" id="sr-emoji">✅</div>
+        <h3 id="sr-title">Check-In Berhasil!</h3>
+      </div>
+      <div class="sr-grid">
+        <div class="sr-item"><span>Nama</span><strong id="sr-nama">—</strong></div>
+        <div class="sr-item"><span>Unit</span><strong id="sr-unit">—</strong></div>
+        <div class="sr-item"><span>Shift</span><strong id="sr-shift">—</strong></div>
+        <div class="sr-item"><span>Jam Masuk</span><strong id="sr-jam">—</strong></div>
+        <div class="sr-item"><span>Status</span><strong id="sr-status">—</strong></div>
+      </div>
+    </div>
+
+    <!-- Check-in button -->
+    <button class="btn-checkin" id="btn-checkin" onclick="doCheckin()">
+      <svg viewBox="0 0 24 24"><path d="M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z"/></svg>
+      Check In Sekarang
+    </button>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     PAGE: ADMIN
+══════════════════════════════════════════ -->
+<div class="page" id="page-admin">
+  <div class="topbar">
+    <div class="tb-brand">
+      <div class="tb-icon">
+        <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+      </div>
+      <div>
+        <span class="tb-title">FEB Corner</span>
+        <span class="tb-sub">Dashboard Admin</span>
+      </div>
+    </div>
+    <button class="btn-icon" onclick="showPage('page-staff')" title="Kembali ke Absensi">
+      <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+    </button>
+  </div>
+
+  <div class="admin-body">
+
+    <!-- ── SERVER TEST PANEL ── -->
+    <div class="test-panel">
+      <h4>🔧 Konfigurasi & Test Server</h4>
+      <div class="test-url-row">
+        <input type="text" id="api-url-input" placeholder="Paste URL Google Apps Script di sini..." />
+        <button class="btn-run-test" id="btn-run-test" onclick="runTest()">Test</button>
+        <button class="btn-save-url" onclick="saveApiUrl()">Simpan</button>
+      </div>
+      <div class="test-log" id="test-log"><span class="log-info">Masukkan URL Apps Script lalu klik Test untuk memeriksa koneksi.</span></div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-val" id="st-total">0</div><div class="stat-lbl">Total Absen</div></div>
+      <div class="stat-card g"><div class="stat-val" id="st-hadir">0</div><div class="stat-lbl">Hadir</div></div>
+      <div class="stat-card gr"><div class="stat-val" id="st-terlambat">0</div><div class="stat-lbl">Terlambat</div></div>
+    </div>
+
+    <!-- Filter -->
+    <div class="filter-bar">
+      <div class="fg">
+        <label>Bulan</label>
+        <select id="f-bulan"></select>
+      </div>
+      <div class="fg">
+        <label>Unit</label>
+        <select id="f-unit">
+          <option value="">Semua Unit</option>
+          <option value="Pojok Kopi">Pojok Kopi</option>
+          <option value="Pojok UMKM">Pojok UMKM</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label>Shift</label>
+        <select id="f-shift">
+          <option value="">Semua Shift</option>
+          <option value="Shift 1">Shift 1</option>
+          <option value="Shift 2">Shift 2</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label>Nama</label>
+        <input type="text" id="f-nama" placeholder="Cari nama..." />
+      </div>
+      <button class="btn-filter" onclick="loadAbsensi()">Tampilkan</button>
+      <a id="link-sheet" href="#" target="_blank" class="btn-sheet">
+        <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14H7v-2h5v2zm5-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+        Spreadsheet
+      </a>
+    </div>
+
+    <!-- Table -->
+    <div class="table-card">
+      <div class="table-head-row">
+        <h3>Data Kehadiran</h3>
+        <span class="tcount" id="tcount">0 data</span>
+      </div>
+      <div class="tw">
+        <table>
+          <thead>
+            <tr>
+              <th>Tanggal</th><th>Nama</th><th>Unit</th><th>Shift</th><th>Jam Masuk</th><th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="tbody">
+            <tr><td colspan="6"><div class="empty-st"><p>Pilih bulan lalu klik Tampilkan</p></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</div><!-- #app -->
+
+<script>
+// ════════════════════════════════════════════
+// CONFIG  — diambil dari localStorage jika ada
+// ════════════════════════════════════════════
+let API_URL = localStorage.getItem('feb_api_url') || '';
+const SPREADSHEET_URL = localStorage.getItem('feb_sheet_url') || '#';
+
+const BULAN_LIST = ['Januari','Februari','Maret','April','Mei','Juni',
+                    'Juli','Agustus','September','Oktober','November','Desember'];
+
+// Daftar staff default (akan di-overwrite jika server aktif)
+let STAFF_LIST = ['Farel','Sari','Dinda','Rizky'];
+
+// ════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════
+let selectedStaff = '';
+let selectedUnit  = '';
+let selectedShift = '';
+let clockTick     = null;
+let serverOk      = false;
+let allData       = [];
+
+// ════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  // Isi bulan filter
+  const sel = document.getElementById('f-bulan');
+  BULAN_LIST.forEach((b,i) => {
+    const opt = document.createElement('option');
+    opt.value = b; opt.textContent = b;
+    if (i === new Date().getMonth()) opt.selected = true;
+    sel.appendChild(opt);
+  });
+
+  // Isi URL input jika ada
+  if (API_URL) document.getElementById('api-url-input').value = API_URL;
+
+  // Spreadsheet link
+  const savedSheet = localStorage.getItem('feb_sheet_url');
+  if (savedSheet) document.getElementById('link-sheet').href = savedSheet;
+
+  startClock();
+  buildStaffPicker();
+  pingServer();
+});
+
+// ════════════════════════════════════════════
+// CLOCK
+// ════════════════════════════════════════════
+function startClock() {
+  function tick() {
+    const now = new Date();
+    const pad = n => String(n).padStart(2,'0');
+    document.getElementById('clock').textContent =
+      `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+    const hari = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+    document.getElementById('date-str').textContent =
+      `${hari[now.getDay()]}, ${now.getDate()} ${BULAN_LIST[now.getMonth()]} ${now.getFullYear()}`;
+    const h = now.getHours();
+    document.getElementById('greeting-txt').textContent =
+      h<11?'Selamat Pagi!':h<15?'Selamat Siang!':h<18?'Selamat Sore!':'Selamat Malam!';
+  }
+  tick();
+  if (clockTick) clearInterval(clockTick);
+  clockTick = setInterval(tick, 1000);
+}
+
+// ════════════════════════════════════════════
+// STAFF PICKER
+// ════════════════════════════════════════════
+function buildStaffPicker() {
+  const container = document.getElementById('staff-picker');
+  container.innerHTML = STAFF_LIST.map(name => `
+    <div class="staff-chip" id="sc-${name}" onclick="selectStaff('${name}')">
+      <div class="chip-avatar">${name[0].toUpperCase()}</div>
+      <div class="chip-name">${name}</div>
+    </div>
+  `).join('');
+}
+
+function selectStaff(name) {
+  selectedStaff = name;
+  document.querySelectorAll('.staff-chip').forEach(c => c.classList.remove('selected'));
+  const el = document.getElementById('sc-'+name);
+  if (el) el.classList.add('selected');
+}
+
+// ════════════════════════════════════════════
+// UNIT & SHIFT SELECT
+// ════════════════════════════════════════════
+function selectUnit(u) {
+  selectedUnit = u;
+  document.getElementById('u-kopi').classList.toggle('selected', u==='Pojok Kopi');
+  document.getElementById('u-umkm').classList.toggle('selected', u==='Pojok UMKM');
+}
+function selectShift(s) {
+  selectedShift = s;
+  document.getElementById('sh-1').classList.toggle('selected', s==='Shift 1');
+  document.getElementById('sh-2').classList.toggle('selected', s==='Shift 2');
+}
+
+// ════════════════════════════════════════════
+// PING SERVER
+// ════════════════════════════════════════════
+async function pingServer() {
+  const dot  = document.getElementById('s-dot');
+  const text = document.getElementById('s-text');
+  const btn  = document.getElementById('btn-ping');
+
+  dot.className  = 'dot checking';
+  text.className = 'server-text';
+  text.textContent = 'Memeriksa koneksi...';
+  btn.disabled = true;
+
+  if (!API_URL) {
+    dot.className  = 'dot err';
+    text.className = 'server-text err';
+    text.textContent = 'API URL belum dikonfigurasi — mode demo aktif';
+    serverOk = false;
+    btn.disabled = false;
+    return;
+  }
+
+  try {
+    const res = await fetchAPI({ action: 'ping' });
+    if (res.success) {
+      dot.className  = 'dot ok';
+      text.className = 'server-text ok';
+      text.textContent = 'Server terhubung ✓ — ' + (res.message || 'aktif');
+      serverOk = true;
+      // Coba ambil staff list dari server
+      try {
+        const sr = await fetchAPI({ action: 'getStaff' });
+        if (sr.success && sr.staff?.length) {
+          STAFF_LIST = sr.staff;
+          buildStaffPicker();
+        }
+      } catch(_) {}
+    } else {
+      throw new Error(res.message || 'Respons tidak valid');
+    }
+  } catch(e) {
+    dot.className  = 'dot err';
+    text.className = 'server-text err';
+    text.textContent = 'Gagal terhubung: ' + e.message;
+    serverOk = false;
+  }
+  btn.disabled = false;
+}
+
+// ════════════════════════════════════════════
+// TEST PANEL (admin)
+// ════════════════════════════════════════════
+async function runTest() {
+  const url = document.getElementById('api-url-input').value.trim();
+  const log = document.getElementById('test-log');
+  const btn = document.getElementById('btn-run-test');
+
+  if (!url) { log.innerHTML = '<span class="log-err">⚠ Masukkan URL Apps Script terlebih dahulu.</span>'; return; }
+
+  btn.disabled = true;
+  log.innerHTML = '<span class="log-info">⏳ Mengirim request ping...</span>';
+
+  const t0 = Date.now();
+  try {
+    const res = await fetch(url, {
+      method : 'POST',
+      body   : JSON.stringify({ action: 'ping' }),
+      headers: { 'Content-Type': 'text/plain' }, // GAS workaround
+    });
+    const ms   = Date.now() - t0;
+    const text = await res.text();
+    let parsed;
+    try { parsed = JSON.parse(text); } catch(_) { parsed = null; }
+
+    if (parsed?.success) {
+      log.innerHTML =
+        `<span class="log-ok">✅ Server aktif! (${ms}ms)</span>\n` +
+        `<span class="log-info">Response: ${text.slice(0,200)}</span>`;
+    } else {
+      log.innerHTML =
+        `<span class="log-err">⚠ Server merespons tapi format tidak sesuai (${ms}ms)</span>\n` +
+        `<span class="log-info">Response: ${text.slice(0,300)}</span>`;
+    }
+  } catch(e) {
+    const ms = Date.now() - t0;
+    log.innerHTML =
+      `<span class="log-err">❌ Gagal terhubung (${ms}ms)</span>\n` +
+      `<span class="log-info">Error: ${e.message}</span>\n` +
+      `<span class="log-info">Pastikan:\n• URL sudah benar\n• Deploy sebagai Web App\n• Access: Anyone</span>`;
+  }
+  btn.disabled = false;
+}
+
+function saveApiUrl() {
+  const url = document.getElementById('api-url-input').value.trim();
+  if (!url) { showToast('URL tidak boleh kosong', 'err'); return; }
+  API_URL = url;
+  localStorage.setItem('feb_api_url', url);
+  showToast('URL disimpan ✓ — Testing koneksi...', 'ok');
+  // Update status bar
+  pingServer();
+}
+
+// ════════════════════════════════════════════
+// CHECK-IN
+// ════════════════════════════════════════════
+async function doCheckin() {
+  if (!selectedStaff) { showToast('Pilih nama terlebih dahulu', 'err'); return; }
+  if (!selectedUnit)  { showToast('Pilih unit kerja', 'err'); return; }
+  if (!selectedShift) { showToast('Pilih shift', 'err'); return; }
+
+  showLoad(true);
+  try {
+    const res = await fetchAPI({ action:'checkin', staffName:selectedStaff, unit:selectedUnit, shift:selectedShift });
+    if (res.success) {
+      const d = res.data;
+      const late = d.status === 'Terlambat';
+      document.getElementById('sr-nama').textContent   = d.nama;
+      document.getElementById('sr-unit').textContent   = d.unit;
+      document.getElementById('sr-shift').textContent  = d.shift;
+      document.getElementById('sr-jam').textContent    = d.jamMasuk;
+      document.getElementById('sr-status').textContent = d.status;
+      const card  = document.getElementById('status-result');
+      const emoji = document.getElementById('sr-emoji');
+      const title = document.getElementById('sr-title');
+      card.classList.remove('late');
+      if (late) {
+        card.classList.add('late');
+        emoji.textContent = '⚠️'; emoji.className = 'sr-emoji late';
+        title.textContent = 'Check-In Berhasil (Terlambat)';
+      } else {
+        emoji.textContent = '✅'; emoji.className = 'sr-emoji ok';
+        title.textContent = 'Check-In Berhasil!';
+      }
+      card.classList.add('show');
+      document.getElementById('btn-checkin').disabled = true;
+      showToast('Check-in berhasil dicatat ✓', 'ok');
+    } else {
+      showToast(res.message || 'Gagal check-in', 'err');
+    }
+  } catch(e) {
+    showToast('Error: ' + e.message, 'err');
+  }
+  showLoad(false);
+}
+
+// ════════════════════════════════════════════
+// LOAD ABSENSI (admin)
+// ════════════════════════════════════════════
+async function loadAbsensi() {
+  const bulan = document.getElementById('f-bulan').value;
+  showLoad(true);
+  try {
+    const res = await fetchAPI({ action:'getAbsensi', bulan });
+    if (res.success) { allData = res.data; renderTable(); }
+    else showToast(res.message || 'Gagal memuat data', 'err');
+  } catch(e) {
+    showToast('Error: ' + e.message, 'err');
+  }
+  showLoad(false);
+}
+
+function renderTable() {
+  const unit  = document.getElementById('f-unit').value;
+  const shift = document.getElementById('f-shift').value;
+  const nama  = document.getElementById('f-nama').value.toLowerCase();
+
+  const filtered = allData.filter(r =>
+    (!unit  || r.unit  === unit) &&
+    (!shift || r.shift === shift) &&
+    (!nama  || r.nama.toLowerCase().includes(nama))
+  );
+
+  document.getElementById('st-total').textContent     = filtered.length;
+  document.getElementById('st-hadir').textContent     = filtered.filter(r=>r.status==='Hadir').length;
+  document.getElementById('st-terlambat').textContent = filtered.filter(r=>r.status==='Terlambat').length;
+  document.getElementById('tcount').textContent       = filtered.length + ' data';
+
+  const tbody = document.getElementById('tbody');
+  if (!filtered.length) {
+    tbody.innerHTML = '<tr><td colspan="6"><div class="empty-st"><p>Tidak ada data</p></div></td></tr>';
+    return;
+  }
+  const sorted = [...filtered].sort((a,b)=>{
+    const da = a.tanggal.split('/').reverse().join('');
+    const db = b.tanggal.split('/').reverse().join('');
+    return db.localeCompare(da);
+  });
+  tbody.innerHTML = sorted.map(r=>`
+    <tr>
+      <td>${r.tanggal}</td>
+      <td><strong>${r.nama}</strong></td>
+      <td>${r.unit}</td>
+      <td>${r.shift}</td>
+      <td>${r.jamMasuk}</td>
+      <td><span class="badge ${r.status==='Hadir'?'bh':'bt'}">${r.status}</span></td>
+    </tr>
+  `).join('');
+}
+
+// ════════════════════════════════════════════
+// API FETCH + DEMO FALLBACK
+// ════════════════════════════════════════════
+async function fetchAPI(body) {
+  if (!API_URL) return demoMode(body);
+  const res = await fetch(API_URL, {
+    method : 'POST',
+    body   : JSON.stringify(body),
+    headers: { 'Content-Type': 'text/plain' },
+  });
+  const text = await res.text();
+  return JSON.parse(text);
+}
+
+// Demo mode data
+let demoRows = [
+  { tanggal:'26/05/2026', nama:'Farel', unit:'Pojok Kopi',  shift:'Shift 1', jamMasuk:'07:12', status:'Hadir' },
+  { tanggal:'26/05/2026', nama:'Sari',  unit:'Pojok UMKM',  shift:'Shift 2', jamMasuk:'14:05', status:'Hadir' },
+  { tanggal:'26/05/2026', nama:'Dinda', unit:'Pojok Kopi',  shift:'Shift 1', jamMasuk:'07:22', status:'Terlambat' },
+  { tanggal:'25/05/2026', nama:'Rizky', unit:'Pojok Kopi',  shift:'Shift 1', jamMasuk:'07:08', status:'Hadir' },
+];
+
+const SHIFT_BATAS = { 'Shift 1':'07:15', 'Shift 2':'14:15' };
+
+function demoMode(body) {
+  return new Promise(resolve => setTimeout(() => {
+    if (body.action === 'ping') {
+      resolve({ success:false, message:'Demo mode — API URL belum diisi' });
+    } else if (body.action === 'getStaff') {
+      resolve({ success:true, staff: STAFF_LIST });
+    } else if (body.action === 'checkin') {
+      const now  = new Date();
+      const pad  = n => String(n).padStart(2,'0');
+      const today = `${pad(now.getDate())}/${pad(now.getMonth()+1)}/${now.getFullYear()}`;
+      if (demoRows.some(r => r.tanggal===today && r.nama===body.staffName)) {
+        resolve({ success:false, message:`${body.staffName} sudah check-in hari ini.` }); return;
+      }
+      const jam    = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+      const batas  = SHIFT_BATAS[body.shift] || '07:15';
+      const status = jam > batas ? 'Terlambat' : 'Hadir';
+      const row    = { tanggal:today, nama:body.staffName, unit:body.unit, shift:body.shift, jamMasuk:jam, status };
+      demoRows.unshift(row);
+      resolve({ success:true, message:'Check-in berhasil! (Demo)', data:row });
+    } else if (body.action === 'getAbsensi') {
+      const idx  = BULAN_LIST.indexOf(body.bulan);
+      const data = demoRows.filter(r => parseInt(r.tanggal.split('/')[1])-1 === idx);
+      resolve({ success:true, data });
+    }
+  }, 500));
+}
+
+// ════════════════════════════════════════════
+// PAGE NAV
+// ════════════════════════════════════════════
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (id === 'page-admin') {
+    // Sync url input
+    document.getElementById('api-url-input').value = API_URL;
+  }
+  if (id === 'page-staff') {
+    // Reset checkin state agar bisa check-in lagi jika beda hari
+    // (tombol hanya di-disabled setelah success, reset manual jika perlu)
+  }
+}
+
+// ════════════════════════════════════════════
+// UI HELPERS
+// ════════════════════════════════════════════
+function showLoad(v) { document.getElementById('loading').classList.toggle('show', v); }
+
+let toastTimer;
+function showToast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + type;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3200);
+}
+</script>
+</body>
+</html>
